@@ -297,8 +297,8 @@ def userLogin():
 def dashboard():
     return render_template("dashboard.html")
 
-@app.route("/addPoll", methods=["POST"])
-def add_poll():
+@app.route("/addParty", methods=["POST"])
+def add_party():
     """Handles poll creation by saving form data and an image."""
     try:
         # Get Form Data
@@ -322,9 +322,11 @@ def add_poll():
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
         party_image.save(file_path)
+        
+        id=None
 
         contract,web3=connectWithContract(0)
-        tx_hash=contract.functions.addPoll(party_name,leader_name,file_path).transact()
+        tx_hash=contract.functions.addPoll(int(id),party_name,leader_name,file_path).transact()
         web3.eth.waitForTransactionReceipt(tx_hash)
 
         flash("Poll added successfully!", "success")
@@ -334,6 +336,47 @@ def add_poll():
         flash(f"Error: {str(e)}", "error")
         return redirect(url_for("addPoll"))
     
+@app.route("/addPoll", methods=["POST"])
+def add_poll():
+    try:
+        # Read form data
+        poll_name = request.form.get("pollName")
+        poll_date = request.form.get("pollDate")
+        start_time = request.form.get("startTime")
+        end_time = request.form.get("endTime")
+
+        # Validation
+        if not poll_name or not poll_date or not start_time or not end_time:
+            flash("All fields are required!", "error")
+            return redirect(url_for("add_poll_page"))
+
+        # Connect to Blockchain
+        try:
+            contract, web3 = connectWithContract(0)
+
+            # Call Smart Contract Function to Add Poll
+            tx_hash = contract.functions.addPoll(poll_name, poll_date, start_time, end_time).transact()
+            web3.eth.waitForTransactionReceipt(tx_hash)
+
+            flash("Poll added successfully!", "success")
+            return redirect(url_for("addPoll"))
+
+        except Exception as e:
+            flash(f"Error adding poll: {str(e)}", "error")
+            return redirect(url_for("addPoll"))
+
+    except Exception as e:
+        flash(f"Unexpected error: {str(e)}", "error")
+        return redirect(url_for("addPoll"))
+
+@app.route("/getAllPolls")
+def getAllPolls():
+    try:
+        contract,web3=connectWithContract(0)
+        allPolls=contract.functions.getAllPolls().call()
+        return render_template("allPolls.html",polls=allPolls)
+    except Exception as e:
+        return 
 
 if __name__ == "__main__":
     app.run(debug=True)

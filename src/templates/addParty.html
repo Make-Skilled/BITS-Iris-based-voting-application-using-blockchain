@@ -23,41 +23,31 @@
 
         <!-- Main Content -->
         <main class="flex-1 p-6">
-            <h1 class="text-2xl font-bold mb-5">Add New Poll</h1>
+            <h1 class="text-2xl font-bold mb-5">Add New Party</h1>
 
             <!-- Add Poll Form -->
             <div class="bg-white p-6 shadow-md rounded-lg max-w-lg">
-                {% with messages = get_flashed_messages(with_categories=true) %} 
-                    {% if messages %} 
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ category }}">{{ message }}</div>
-                        {% endfor %} 
-                    {% endif %} 
-                {% endwith %}
-                
-                <form action="/addPoll" method="POST" enctype="multipart/form-data">
+                {% with messages = get_flashed_messages(with_categories=true) %} {% if
+                    messages %} {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %} {% endif %} {% endwith %}
+                <form action="/addParty" method="POST" enctype="multipart/form-data">
                     <div class="mb-4">
-                        <label class="block text-gray-700 font-bold mb-2" for="pollName">Poll Name</label>
-                        <input type="text" id="pollName" name="pollName" required
+                        <label class="block text-gray-700 font-bold mb-2" for="partyName">Party Name</label>
+                        <input type="text" id="partyName" name="partyName" required
                             class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-gray-700 font-bold mb-2" for="pollDate">Poll Date</label>
-                        <input type="date" id="pollDate" name="pollDate" required
+                        <label class="block text-gray-700 font-bold mb-2" for="leaderName">Party Leader Name</label>
+                        <input type="text" id="leaderName" name="leaderName" required
                             class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
 
                     <div class="mb-4">
-                        <label class="block text-gray-700 font-bold mb-2" for="startTime">Start Time</label>
-                        <input type="time" id="startTime" name="startTime" required
-                            class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-gray-700 font-bold mb-2" for="endTime">End Time</label>
-                        <input type="time" id="endTime" name="endTime" required
-                            class="w-full p-3 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-gray-700 font-bold mb-2" for="partyImage">Party Image</label>
+                        <input type="file" id="partyImage" name="partyImage" accept="image/*" required
+                            class="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
 
                     <div class="flex justify-end">
