@@ -197,6 +197,16 @@ def ad_party():
 def login():
     return render_template("login.html")
 
+@app.route("/viewPolls")
+def viewPolls():
+    try:
+        contract,web3=connectWithContract(0)
+        allPolls=contract.functions.getAllPolls().call()
+        return render_template("userPolls.html",polls=allPolls)
+    except Exception as e:
+        flash(f"Error fetching polls: {str(e)}", "error")
+        return redirect(url_for("dashboard"))  # Redirect in case of error
+
 @app.route("/registerUser", methods=["POST"])
 def userRegister():
     try:
@@ -269,7 +279,11 @@ def userLogin():
 
     if not aadhar or not password:
         flash("Aadhar and Password are required!", "error")
-        return redirect(url_for("show_login"))
+        return redirect(url_for("login"))
+    
+    if(aadhar=="959008065677" and password=="admin@123"):
+        session['admin']="admin"
+        return redirect(url_for("adminDashboard"))
 
     try:
         # Call Smart Contract Function
@@ -294,12 +308,17 @@ def userLogin():
             return redirect(url_for("login"))
 
     except Exception as e:
-        flash(f"Login failed: {str(e)}", "error")
+        flash(f"Login failed", "error")
         return redirect(url_for("login"))
     
 @app.route("/dashboard")
 def dashboard():
-    return render_template("dashboard.html")
+    try:
+        session['user']
+        return render_template("dashboard.html")
+    except Exception as e:
+        flash(f"Please login", "error")
+        return redirect(url_for("login"))
 
 @app.route("/addParty", methods=["POST"])
 def add_party():
@@ -313,11 +332,11 @@ def add_party():
         # Validate Inputs
         if not party_name or not leader_name or not party_image:
             flash("All fields are required!", "error")
-            return redirect(url_for("show_add_poll_form"))
+            return redirect(url_for("ad_party"))
 
         if not allowed_file(party_image.filename):
             flash("Invalid file format. Only PNG, JPG, and JPEG allowed!", "error")
-            return redirect(url_for("addPoll"))
+            return redirect(url_for("ad_party"))
 
         # Save Image with Timestamp
         file_extension = party_image.filename.rsplit('.', 1)[1].lower()
@@ -334,7 +353,7 @@ def add_party():
         web3.eth.waitForTransactionReceipt(tx_hash)
 
         flash("Party added successfully!", "success")
-        return redirect(url_for("addParty"))
+        return redirect(url_for("ad_party"))
 
     except Exception as e:
         flash(f"Error: {str(e)}", "error")
@@ -386,15 +405,22 @@ def getAllPolls():
 @app.route("/viewParties/<id>")
 def view_parties(id):
     try:
+        session['admin']
         session['pollId']=id
         contract,web3=connectWithContract(0)
         parties=contract.functions.getPartiesByPartyId(int(id)).call()
         print(parties)
         return render_template("parties.html",parties=parties)
     except Exception as e:
-        return str(e)
+        contract,web3=connectWithContract(0)
+        parties=contract.functions.getPartiesByPartyId(int(id)).call()
+        print(parties)
+        return render_template("userParties.html",parties=parties)
     
-
+@app.route("/logout")
+def logout():
+    session.clear()
+    return render_template("index.html")
 
 if __name__ == "__main__":
     app.run(debug=True)

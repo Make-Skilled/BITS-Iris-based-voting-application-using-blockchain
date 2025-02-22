@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Parties</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+            <!-- Navigation -->
+            <nav class="bg-white shadow-lg">
+                <div class="max-w-7xl mx-auto px-4">
+                    <div class="flex justify-between items-center h-16">
+                        <div class="flex items-center">
+                            <span class="text-2xl font-bold text-blue-600">SecureVote</span>
+                        </div>
+                        <div class="hidden md:flex items-center space-x-8">
+                            <a href="#features" class="text-gray-600 hover:text-blue-600">Features</a>
+                            <a href="#how-it-works" class="text-gray-600 hover:text-blue-600">How It Works</a>
+                            <a href="/viewPolls" class="text-gray-600 hover:text-blue-600">View Polls</a>
+                            <a href="/logout"><button class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Logout</button></a>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+    <h1 class="text-3xl font-bold text-gray-800 mb-6">All Parties</h1>
+
+
+    {% if parties %}
+        <!-- Parties Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-6xl">
+            {% for party in parties %}
+            <div class="bg-white p-5 shadow-md rounded-lg hover:shadow-lg transition">
+                <img src="{{ url_for('static', filename='uploads/' + party[3]) }}" 
+                     alt="{{ party[1] }}" 
+                     class="w-full h-40 object-cover rounded-md">
+                <h2 class="text-xl font-semibold text-gray-900 mt-4">{{ party[1] }}</h2>
+                <p class="text-gray-600 mt-2"><strong>Leader:</strong> {{ party[2] }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <!-- No Parties Message -->
+        <div class="text-center p-6 bg-white shadow-md rounded-lg">
+            <p class="text-gray-700 text-lg font-semibold">No parties were registered for this poll.</p>
+        </div>
+    {% endif %}
+
+</body>
+</html>
