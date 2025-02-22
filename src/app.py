@@ -256,6 +256,46 @@ def userRegister():
         last_sentence = error_message.split(":")[-1].strip()  
         flash(last_sentence, "error")  
         return redirect(url_for("addUser"))
+    
+@app.route("/login", methods=["POST"])
+def userLogin():
+    """Handles user login with Aadhar and password, using flash messages and templates."""
+    aadhar = request.form.get("aadhar")
+    password = request.form.get("password")
+
+    if not aadhar or not password:
+        flash("Aadhar and Password are required!", "error")
+        return redirect(url_for("show_login"))
+
+    try:
+        # Call Smart Contract Function
+        contract,web3=connectWithContract(0)
+        voter = contract.functions.getVoter(aadhar).call()
+        print(voter)
+
+        if not voter:
+            flash("Voter not registered!", "error")
+            return redirect(url_for("login"))
+
+        fullName, aadharNumber, irisImagePath, email, stored_password = voter
+
+        # Check Password
+        if password == stored_password:
+            session["user"] = {"name": fullName, "aadhar": aadharNumber, "email": email}  # Store session
+            flash("Login Successful!", "success")
+            return redirect(url_for("dashboard"))  # Redirect to dashboard
+
+        else:
+            flash("Invalid Password!", "error")
+            return redirect(url_for("login"))
+
+    except Exception as e:
+        flash(f"Login failed: {str(e)}", "error")
+        return redirect(url_for("login"))
+    
+@app.route("/dashboard")
+def dashboard():
+    return render_template("dashboard.html")
 
 if __name__ == "__main__":
     app.run(debug=True)
