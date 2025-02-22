@@ -189,6 +189,10 @@ def addUser():
 def addPoll():
     return render_template("addPoll.html")
 
+@app.route("/addParty")
+def ad_party():
+    return render_template("addParty.html")
+
 @app.route("/login")
 def login():
     return render_template("login.html")
@@ -323,14 +327,14 @@ def add_party():
 
         party_image.save(file_path)
         
-        id=None
+        id=session['pollId']
 
         contract,web3=connectWithContract(0)
-        tx_hash=contract.functions.addPoll(int(id),party_name,leader_name,file_path).transact()
+        tx_hash=contract.functions.addParty(int(id),party_name,leader_name,filename).transact()
         web3.eth.waitForTransactionReceipt(tx_hash)
 
-        flash("Poll added successfully!", "success")
-        return redirect(url_for("addPoll"))
+        flash("Party added successfully!", "success")
+        return redirect(url_for("addParty"))
 
     except Exception as e:
         flash(f"Error: {str(e)}", "error")
@@ -376,7 +380,21 @@ def getAllPolls():
         allPolls=contract.functions.getAllPolls().call()
         return render_template("allPolls.html",polls=allPolls)
     except Exception as e:
-        return 
+        flash(f"Error fetching polls: {str(e)}", "error")
+        return redirect(url_for("dashboard"))  # Redirect in case of error 
+    
+@app.route("/viewParties/<id>")
+def view_parties(id):
+    try:
+        session['pollId']=id
+        contract,web3=connectWithContract(0)
+        parties=contract.functions.getPartiesByPartyId(int(id)).call()
+        print(parties)
+        return render_template("parties.html",parties=parties)
+    except Exception as e:
+        return str(e)
+    
+
 
 if __name__ == "__main__":
     app.run(debug=True)

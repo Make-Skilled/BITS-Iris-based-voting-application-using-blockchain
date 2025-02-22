@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Parties</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Sidebar -->
+    <div class="flex min-h-screen">
+        <aside class="w-64 bg-gray-900 text-white p-5">
+            <h2 class="text-xl font-bold mb-5">Admin Dashboard</h2>
+            <ul>
+                <li class="mb-3"><a href="#" class="block p-2 rounded bg-gray-800">Dashboard</a></li>
+                <li class="mb-3"><a href="addUser.html" class="block p-2 rounded hover:bg-gray-700">Add User</a></li>
+                <li class="mb-3"><a href="addPoll.html" class="block p-2 rounded hover:bg-gray-700">Add Poll</a></li>
+                <li class="mb-3"><a href="allParties.html" class="block p-2 rounded hover:bg-gray-700">View Parties</a></li>
+                <li class="mb-3"><a href="#" class="block p-2 rounded hover:bg-gray-700">Logout</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6">
+            <h1 class="text-2xl font-bold mb-5 text-gray-800">All Parties</h1>
+
+            <!-- Flash Messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="p-4 mb-4 rounded text-white 
+                            {% if category == 'error' %} bg-red-500 
+                            {% elif category == 'warning' %} bg-yellow-500 
+                            {% else %} bg-green-500 {% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Add Party Button -->
+            <div class="flex justify-end mb-5">
+                <a href="/addParty" class="bg-blue-500 text-white px-5 py-2 rounded hover:bg-blue-600 transition">
+                    + Add Party
+                </a>
+            </div>
+
+            {% if parties %}
+                <!-- Parties Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {% for party in parties %}
+                    <div class="bg-white p-5 shadow-md rounded-lg">
+                        <img src="{{ url_for('static', filename='uploads/' + party[3]) }}" alt="{{ party[1] }}" class="w-full h-40 object-cover rounded-md">
+                        <h2 class="text-xl font-semibold text-gray-900 mt-4">{{ party[1] }}</h2>
+                        <p class="text-gray-600 mt-2"><strong>Leader:</strong> {{ party[2] }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <!-- No Parties Message -->
+                <div class="text-center p-6 bg-white shadow-md rounded-lg">
+                    <p class="text-gray-700 text-lg font-semibold">No parties were registered for this poll.</p>
+                </div>
+            {% endif %}
+        </main>
+    </div>
+
+</body>
+</html>

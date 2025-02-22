@@ -65,7 +65,6 @@ contract Voting {
 
     // Function to add a new party (now accepts `id` as an argument)
     function addParty(uint _id, string memory _partyName, string memory _partyLeader, string memory _symbolPath) public {
-        require(bytes(parties[_id].partyName).length == 0, "Party ID already exists");
 
         parties[_id] = Party(_id, _partyName, _partyLeader, _symbolPath);
         allParties.push(Party(_id, _partyName, _partyLeader, _symbolPath));
