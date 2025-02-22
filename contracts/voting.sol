@@ -119,5 +119,12 @@ function addPoll(string memory _pollName, string memory _pollDate, string memory
         return allPolls;
     }
 
+        // Function to get poll details by pollId
+    function getPollById(uint _pollId) public view returns (uint, string memory, string memory, string memory, string memory) {
+        require(bytes(polls[_pollId].pollName).length > 0, "Poll does not exist");
+
+        Poll memory poll = polls[_pollId];
+        return (poll.pollId, poll.pollName, poll.pollDate, poll.startTime, poll.endTime);
+    }
 
 }

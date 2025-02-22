@@ -3,6 +3,7 @@ from werkzeug.utils import secure_filename
 from web3 import Web3, HTTPProvider
 from dotenv import load_dotenv  # Load environment variables
 import boto3, time, json, os
+from datetime import datetime, timedelta
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
 import smtplib
@@ -417,6 +418,52 @@ def view_parties(id):
         print(parties)
         return render_template("userParties.html",parties=parties)
     
+@app.route("/timer")
+def timer():
+    return render_template("timer.html")
+
+@app.route("/voteNow/<id>")
+def voteNow(id):
+    contract, web3 = connectWithContract(0)
+    poll = contract.functions.getPollById(int(id)).call()
+    print("Raw Poll Data:", poll)
+
+    # Extract date and time from the poll response
+    poll_date = poll[2]  # Format: 'YYYY-MM-DD'
+    poll_start_time = poll[3]  # Format: 'HH:MM'
+    poll_end_time = poll[4]  # Format: 'HH:MM'
+
+    # Combine date and time into full datetime strings
+    poll_start_str = f"{poll_date} {poll_start_time}:00"  # 'YYYY-MM-DD HH:MM:SS'
+    poll_end_str = f"{poll_date} {poll_end_time}:00"  # 'YYYY-MM-DD HH:MM:SS'
+
+    # Convert formatted strings into datetime objects
+    poll_start_datetime = datetime.strptime(poll_start_str, "%Y-%m-%d %H:%M:%S")
+    poll_end_datetime = datetime.strptime(poll_end_str, "%Y-%m-%d %H:%M:%S")
+
+    # Get current UTC time
+    current_time_utc = datetime.utcnow()
+
+    # Convert UTC to IST (UTC + 5 hours 30 minutes)
+    current_time_ist = current_time_utc + timedelta(hours=5, minutes=30)
+
+
+    # Debugging output
+    print(f"Poll Start Time: {poll_start_datetime}")
+    print(f"Current Time: {current_time_ist}")
+    print(f"Poll End Time: {poll_end_datetime}")
+
+    # Logic for navigation
+    if current_time_ist >= poll_end_datetime:
+        print("Polling ended")
+        return render_template("timeout.html")  # Poll has ended
+    elif poll_start_datetime <= current_time_ist < poll_end_datetime:
+        print("Poll is active")
+        return render_template("votenow.html")  # Poll is active
+    else:
+        print("Polling not started")
+        return render_template("timer.html", time=poll_start_str)  # Poll hasn't started yet
+
 @app.route("/logout")
 def logout():
     session.clear()
