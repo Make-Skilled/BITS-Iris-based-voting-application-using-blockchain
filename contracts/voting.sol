@@ -11,6 +11,17 @@ contract voting {
         string password;
     }
 
+    struct Poll{
+      uint id;
+      string partyName;
+      string partyLeader;
+      string symbolPath;
+    }
+
+    uint private pollIdCounter; // Auto-incrementing poll ID
+    mapping(uint => Poll) private polls; // Mapping from poll ID to Poll struct
+    Poll[] public allPolls;
+
     mapping(string => Voter) public voters;
     string[] public voterAadhars;
 
@@ -33,5 +44,23 @@ contract voting {
 
         Voter memory voter = voters[aadhar];
         return (voter.fullName, voter.aadharNumber, voter.irisImagePath,voter.email,voter.password);
+    }
+
+  // Function to add a new poll
+    function addPoll(string memory _partyName, string memory _partyLeader, string memory _symbolPath) public {
+        pollIdCounter++; // Auto-increment ID
+        polls[pollIdCounter] = Poll(pollIdCounter, _partyName, _partyLeader, _symbolPath);
+        allPolls.push(Poll(pollIdCounter, _partyName, _partyLeader, _symbolPath));
+    }
+
+    // Function to get a poll by ID
+    function getPoll(uint _id) public view returns (uint, string memory, string memory, string memory) {
+        require(_id > 0 && _id <= pollIdCounter, "Poll ID does not exist");
+        Poll memory poll = polls[_id];
+        return (poll.id, poll.partyName, poll.partyLeader, poll.symbolPath);
+    }
+
+    function getAllPolls() public view returns (Poll[] memory) {
+        return allPolls;
     }
 }

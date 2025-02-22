@@ -297,5 +297,43 @@ def userLogin():
 def dashboard():
     return render_template("dashboard.html")
 
+@app.route("/addPoll", methods=["POST"])
+def add_poll():
+    """Handles poll creation by saving form data and an image."""
+    try:
+        # Get Form Data
+        party_name = request.form.get("partyName")
+        leader_name = request.form.get("leaderName")
+        party_image = request.files.get("partyImage")
+
+        # Validate Inputs
+        if not party_name or not leader_name or not party_image:
+            flash("All fields are required!", "error")
+            return redirect(url_for("show_add_poll_form"))
+
+        if not allowed_file(party_image.filename):
+            flash("Invalid file format. Only PNG, JPG, and JPEG allowed!", "error")
+            return redirect(url_for("addPoll"))
+
+        # Save Image with Timestamp
+        file_extension = party_image.filename.rsplit('.', 1)[1].lower()
+        timestamp = int(time.time())  
+        filename = f"{timestamp}.{file_extension}"  
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+        party_image.save(file_path)
+
+        contract,web3=connectWithContract(0)
+        tx_hash=contract.functions.addPoll(party_name,leader_name,file_path).transact()
+        web3.eth.waitForTransactionReceipt(tx_hash)
+
+        flash("Poll added successfully!", "success")
+        return redirect(url_for("addPoll"))
+
+    except Exception as e:
+        flash(f"Error: {str(e)}", "error")
+        return redirect(url_for("addPoll"))
+    
+
 if __name__ == "__main__":
     app.run(debug=True)
