@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>All Polls</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- Navigation -->
@@ -12,15 +13,24 @@
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex justify-between items-center h-16">
                 <div class="flex items-center">
-                    <span class="text-2xl font-bold text-blue-600 hover:text-blue-700 transition-colors">SecureVote</span>
+                    <span class="text-2xl font-bold text-blue-600 hover:text-blue-700 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-vote-yea mr-2"></i>
+                        SecureVote
+                    </span>
                 </div>
                 <div class="hidden md:flex items-center space-x-8">
-                    <a href="#features" class="text-gray-600 hover:text-blue-600 transition-colors">Features</a>
-                    <a href="#how-it-works" class="text-gray-600 hover:text-blue-600 transition-colors">How It Works</a>
-                    <a href="/viewPolls" class="text-gray-600 hover:text-blue-600 transition-colors">View Polls</a>
+                    <a href="#features" class="text-gray-600 hover:text-blue-600 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-star mr-2"></i>Features
+                    </a>
+                    <a href="#how-it-works" class="text-gray-600 hover:text-blue-600 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>How It Works
+                    </a>
+                    <a href="/viewPolls" class="text-gray-600 hover:text-blue-600 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-poll mr-2"></i>View Polls
+                    </a>
                     <a href="/logout">
-                        <button class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors duration-300 transform hover:scale-105">
-                            Logout
+                        <button class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-all duration-300 transform hover:scale-105 flex items-center">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
                         </button>
                     </a>
                 </div>
@@ -29,36 +39,49 @@
     </nav>
 
     <main class="container mx-auto px-4 py-8">
-        <h1 class="text-4xl font-bold text-gray-800 mb-8 text-center">Available Polls</h1>
+        <h1 class="text-4xl font-bold text-gray-800 mb-8 text-center flex items-center justify-center">
+            <i class="fas fa-ballot mr-3 text-blue-600"></i>Available Polls
+        </h1>
         
         <!-- Polls Grid -->
         {% if polls %}
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 w-full max-w-6xl mx-auto">
             {% for poll in polls %}
-            <div class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition-shadow duration-300">
+            <div class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                 <div class="space-y-4">
-                    <h2 class="text-xl font-bold text-gray-900 mb-3 line-clamp-2">{{ poll[1] }}</h2>
+                    <h2 class="text-xl font-bold text-gray-900 mb-3 line-clamp-2 flex items-center">
+                        <i class="fas fa-clipboard-list text-blue-600 mr-2"></i>
+                        {{ poll[1] }}
+                    </h2>
                     <div class="space-y-2 text-sm">
                         <p class="text-gray-600 flex items-center justify-between">
-                            <span class="font-semibold">Date:</span>
+                            <span class="font-semibold flex items-center">
+                                <i class="far fa-calendar mr-2 text-blue-600"></i>Date:
+                            </span>
                             <span>{{ poll[2] }}</span>
                         </p>
                         <p class="text-gray-600 flex items-center justify-between">
-                            <span class="font-semibold">Start:</span>
+                            <span class="font-semibold flex items-center">
+                                <i class="far fa-clock mr-2 text-green-600"></i>Start:
+                            </span>
                             <span>{{ poll[3] }}</span>
                         </p>
                         <p class="text-gray-600 flex items-center justify-between">
-                            <span class="font-semibold">End:</span>
+                            <span class="font-semibold flex items-center">
+                                <i class="fas fa-clock mr-2 text-red-600"></i>End:
+                            </span>
                             <span>{{ poll[4] }}</span>
                         </p>
                     </div>
                     <div class="flex flex-col space-y-2 mt-4">
                         <a href="/viewParties/{{ poll[0] }}" 
-                           class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors duration-300 text-center font-medium">
+                           class="w-full bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-all duration-300 text-center font-medium flex items-center justify-center group">
+                            <i class="fas fa-users mr-2 group-hover:rotate-12 transition-transform duration-300"></i>
                             View Parties
                         </a>
                         <a href="/vote/{{ poll[0] }}" 
-                           class="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors duration-300 text-center font-medium">
+                           class="w-full bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-all duration-300 text-center font-medium flex items-center justify-center group">
+                            <i class="fas fa-vote-yea mr-2 group-hover:bounce transition-transform duration-300"></i>
                             Vote Now
                         </a>
                     </div>
@@ -69,6 +92,7 @@
         {% else %}
         <!-- No Polls Message -->
         <div class="text-center py-12">
+            <i class="fas fa-inbox text-gray-400 text-6xl mb-4"></i>
             <p class="text-gray-700 text-xl">No polls are currently available.</p>
             <p class="text-gray-500 mt-2">Please check back later for upcoming polls.</p>
         </div>
