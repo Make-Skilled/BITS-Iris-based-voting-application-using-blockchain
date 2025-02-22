@@ -464,6 +464,54 @@ def voteNow(id):
         print("Polling not started")
         return render_template("timer.html", time=poll_start_str)  # Poll hasn't started yet
 
+@app.route("/verifyIris", methods=["POST"])
+def verify_iris():
+    """Verifies if the uploaded iris image matches an existing registered user."""
+    try:
+        # Check if an image is provided
+        if 'iris' not in request.files:
+            return {"success": False, "message": "No file provided"}, 400
+
+        iris_file = request.files['iris']
+
+        if iris_file.filename == '':
+            return {"success": False, "message": "No file selected"}, 400
+
+        if not allowed_file(iris_file.filename):
+            return {"success": False, "message": "Invalid file format. Only PNG, JPG, and JPEG allowed"}, 400
+
+        # Save the uploaded image temporarily
+        file_extension = iris_file.filename.rsplit('.', 1)[1].lower()
+        timestamp = int(time.time())  
+        filename = f"temp_{timestamp}.{file_extension}"  
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        iris_file.save(file_path)
+
+        # Compare with existing registered iris images
+        image_files = [f for f in os.listdir(app.config['UPLOAD_FOLDER']) if f.lower().endswith(tuple(app.config['ALLOWED_EXTENSIONS']))]
+        
+        for existing_image in image_files:
+            existing_image_path = os.path.join(app.config['UPLOAD_FOLDER'], existing_image)
+            
+            if compare_images(file_path, existing_image_path):
+                # If a match is found, retrieve Aadhar linked to the image
+                contract, web3 = connectWithContract(0)
+                all_voters = contract.functions.getAllVoters().call()
+
+                for voter in all_voters:
+                    _, aadhar, stored_image, _, _ = voter
+                    if stored_image == existing_image:
+                        os.remove(file_path)  # Clean up temp file
+                        return {"success": True, "message": "Iris match found", "aadhar": aadhar}, 200
+
+        # If no match found
+        os.remove(file_path)  # Clean up temp file
+        return {"success": False, "message": "Iris not recognized"}, 404
+
+    except Exception as e:
+        return {"success": False, "message": f"Error: {str(e)}"}, 500
+
+
 @app.route("/logout")
 def logout():
     session.clear()

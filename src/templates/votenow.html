@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vote Now</title>
+    <title>Iris Verification</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -27,6 +27,9 @@
         p {
             font-size: 18px;
         }
+        .file-input {
+            margin: 20px 0;
+        }
         .btn {
             display: inline-block;
             padding: 10px 20px;
@@ -37,7 +40,7 @@
             border-radius: 5px;
             border: none;
             cursor: pointer;
-            margin: 10px;
+            margin-top: 10px;
         }
         .btn:hover {
             background: #218838;
@@ -45,6 +48,15 @@
     </style>
 </head>
 <body>
-<h1>Poll is active</h1>
+    <div class="container">
+        <h1>Iris Verification</h1>
+        <p>Please upload an image of your iris for verification.</p>
+
+        <form action="/verifyIris" method="POST" enctype="multipart/form-data">
+            <input type="file" name="iris" accept="image/*" class="file-input" required>
+            <br>
+            <button type="submit" class="btn">Upload & Verify</button>
+        </form>
+    </div>
 </body>
 </html>

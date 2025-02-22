@@ -63,14 +63,20 @@ contract Voting {
         return (voter.fullName, voter.aadharNumber, voter.irisImagePath, voter.email, voter.password);
     }
 
-    // Function to add a new party (now accepts `id` as an argument)
-    function addParty(uint _id, string memory _partyName, string memory _partyLeader, string memory _symbolPath) public {
+    // New function to get all registered voters
+    function getAllVoters() public view returns (Voter[] memory) {
+        Voter[] memory allVoters = new Voter[](voterAadhars.length);
+        for (uint i = 0; i < voterAadhars.length; i++) {
+            allVoters[i] = voters[voterAadhars[i]];
+        }
+        return allVoters;
+    }
 
+    function addParty(uint _id, string memory _partyName, string memory _partyLeader, string memory _symbolPath) public {
         parties[_id] = Party(_id, _partyName, _partyLeader, _symbolPath);
         allParties.push(Party(_id, _partyName, _partyLeader, _symbolPath));
     }
 
-    // Function to get a party by ID
     function getParty(uint _id) public view returns (uint, string memory, string memory, string memory) {
         require(bytes(parties[_id].partyName).length > 0, "Party does not exist");
 
@@ -78,40 +84,36 @@ contract Voting {
         return (party.id, party.partyName, party.partyLeader, party.symbolPath);
     }
 
-    // Function to get all parties with a specific ID
-function getPartiesByPartyId(uint partyId) public view returns (Party[] memory) {
-    uint count = 0;
+    function getPartiesByPartyId(uint partyId) public view returns (Party[] memory) {
+        uint count = 0;
 
-    // Count how many parties have the given ID
-    for (uint i = 0; i < allParties.length; i++) {
-        if (allParties[i].id == partyId) {
-            count++;
+        for (uint i = 0; i < allParties.length; i++) {
+            if (allParties[i].id == partyId) {
+                count++;
+            }
         }
+
+        Party[] memory result = new Party[](count);
+        uint index = 0;
+
+        for (uint i = 0; i < allParties.length; i++) {
+            if (allParties[i].id == partyId) {
+                result[index] = allParties[i];
+                index++;
+            }
+        }
+
+        return result;
     }
 
-    // Create a dynamic array to store matching parties
-    Party[] memory result = new Party[](count);
-    uint index = 0;
-
-    // Add matching parties to the result array
-    for (uint i = 0; i < allParties.length; i++) {
-        if (allParties[i].id == partyId) {
-            result[index] = allParties[i];
-            index++;
-        }
-    }
-
-    return result;
-}
-
-function addPoll(string memory _pollName, string memory _pollDate, string memory _startTime, string memory _endTime) public {
-        pollCounter++;  // Auto-increment ID
+    function addPoll(string memory _pollName, string memory _pollDate, string memory _startTime, string memory _endTime) public {
+        pollCounter++;  
 
         polls[pollCounter] = Poll(pollCounter, _pollName, _pollDate, _startTime, _endTime);
-        pollIds.push(pollCounter);  // Store poll ID
+        pollIds.push(pollCounter);
     }
 
-        function getAllPolls() public view returns (Poll[] memory) {
+    function getAllPolls() public view returns (Poll[] memory) {
         Poll[] memory allPolls = new Poll[](pollIds.length);
         for (uint i = 0; i < pollIds.length; i++) {
             allPolls[i] = polls[pollIds[i]];
@@ -119,7 +121,6 @@ function addPoll(string memory _pollName, string memory _pollDate, string memory
         return allPolls;
     }
 
-        // Function to get poll details by pollId
     function getPollById(uint _pollId) public view returns (uint, string memory, string memory, string memory, string memory) {
         require(bytes(polls[_pollId].pollName).length > 0, "Poll does not exist");
 
