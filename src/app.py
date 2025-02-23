@@ -21,19 +21,6 @@ SMTP_PORT = 587
 EMAIL_ADDRESS = "kr4785543@gmail.com"
 EMAIL_PASSWORD = "qhuzwfrdagfyqemk"
 
-# AWS Credentials from .env
-AWS_ACCESS_KEY = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_REGION = os.getenv("AWS_REGION", "us-east-1")  # Default region if not specified
-
-# Initialize AWS Rekognition client
-rekognition = boto3.client(
-    'rekognition',
-    aws_access_key_id=AWS_ACCESS_KEY,
-    aws_secret_access_key=AWS_SECRET_KEY,
-    region_name=AWS_REGION
-)
-
 def send_confirmation_email(email, name):
     """ Sends an email confirming successful registration using SMTP """
     try:
@@ -123,6 +110,47 @@ def compare_images(image1_path, image2_path):
         
     except Exception as e:
         print(f"Error comparing images: {e}")
+        return False
+
+def send_vote_confirmation(email, name):
+    """ Sends a thank-you email after the user casts a vote. """
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_ADDRESS
+        msg['To'] = email
+        msg['Subject'] = "Thank You for Voting - Secure Voting Platform"
+
+        body = f"""Dear {name},
+
+Thank you for participating in the Secure Voting Platform.
+
+Your vote has been successfully recorded. We appreciate your contribution to democracy.
+
+Best Regards,  
+Secure Voting Team
+"""
+
+        msg.attach(MIMEText(body, 'plain', 'utf-8'))
+
+        # 🔹 Create SMTP connection with error handling
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.ehlo()
+            server.starttls()  # Secure connection
+            server.ehlo()
+            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            server.send_message(msg)
+
+        print(f"Vote confirmation email sent successfully to {email}")
+        return True
+
+    except smtplib.SMTPAuthenticationError:
+        print("Failed to authenticate with Gmail. Check your email and app password.")
+        return False
+    except smtplib.SMTPException as e:
+        print(f"SMTP error occurred: {str(e)}")
+        return False
+    except Exception as e:
+        print(f"Email sending failed: {str(e)}")
         return False
 
 def check_iris_existence(new_image_path):
@@ -571,12 +599,16 @@ def cast_vote():
         # Check if voter has already voted
         has_voted = contract.functions.hasVoted(int(poll_id), session['user']['aadhar']).call()
         if has_voted:
-            return jsonify({"success": False, "message": "You have already voted in this poll"}), 403
+            return render_template('voteCasted.html')
 
         # Cast the vote
         tx_hash = contract.functions.vote(int(poll_id), int(id), session['user']['aadhar']).transact()
         web3.eth.wait_for_transaction_receipt(tx_hash)
 
+        # Send Thank-You Email
+        voter_email = session['user']['email']
+        voter_name = session['user']['name']
+        send_vote_confirmation(voter_email, voter_name)
         return render_template("success.html"),200
 
     except Exception as e:
