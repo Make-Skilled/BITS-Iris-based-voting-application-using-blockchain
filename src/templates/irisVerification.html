@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SecureVote - Blockchain E-Voting Platform</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/particlesjs/2.2.3/particles.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-blue-600 hover:text-blue-700 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-vote-yea mr-2"></i>
+                        SecureVote
+                    </span>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-gray-600 hover:text-blue-600 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-star mr-2"></i>Features
+                    </a>
+                    <a href="#how-it-works" class="text-gray-600 hover:text-blue-600 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>How It Works
+                    </a>
+                    <a href="/viewPolls" class="text-gray-600 hover:text-blue-600 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-poll mr-2"></i>View Polls
+                    </a>
+                    <a href="/logout">
+                        <button class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-all duration-300 transform hover:scale-105 flex items-center">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </button>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-sm w-full mx-4">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                    <i class="fas fa-check text-green-600 text-2xl"></i>
+                </div>
+                <h3 class="mt-4 text-lg font-medium text-gray-900">Verification Successful!</h3>
+                <p class="mt-2 text-sm text-gray-500">Your identity has been verified successfully.</p>
+
+                <div class="mt-4 text-left bg-gray-100 p-4 rounded-lg">
+                    <p class="text-gray-700"><strong>Name:</strong> <span id="verifiedName"></span></p>
+                    <p class="text-gray-700"><strong>Aadhar:</strong> <span id="verifiedAadhar"></span></p>
+                    <p class="text-gray-700"><strong>Email:</strong> <span id="verifiedEmail"></span></p>
+                </div>
+
+                <a href="/vote" class="mt-6 inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-all duration-300">
+                    <i class="fas fa-vote-yea mr-2"></i>Vote Now
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error Modal -->
+    <div id="errorModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-sm w-full mx-4">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <i class="fas fa-times text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="mt-4 text-lg font-medium text-gray-900">Verification Failed</h3>
+                <p id="errorMessage" class="mt-2 text-sm text-gray-500"></p>
+                <button onclick="closeErrorModal()" class="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-all duration-300">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Iris Verification Form -->
+    <div class="flex items-center justify-center min-h-screen bg-gray-100">
+        <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+            <h2 class="text-2xl font-bold text-gray-900 text-center mb-4">Iris Verification</h2>
+            <p class="text-gray-600 text-center mb-6">Please upload an image of your iris for identity verification.</p>
+
+            <form id="irisUploadForm" enctype="multipart/form-data">
+                <input type="file" id="iris" name="iris" accept="image/*" class="hidden">
+                <label for="iris" class="block w-full text-center bg-blue-600 text-white py-3 rounded-lg cursor-pointer hover:bg-blue-700 transition-all duration-300">
+                    <i class="fas fa-upload mr-2"></i>Choose File
+                </label>
+                <p id="fileName" class="text-gray-500 text-center mt-2">No file chosen</p>
+
+                <button type="submit" class="mt-6 w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-all duration-300">
+                    <i class="fas fa-check-circle mr-2"></i>Submit
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('iris').addEventListener('change', function(e) {
+            document.getElementById('fileName').textContent = e.target.files[0] ? e.target.files[0].name : 'No file chosen';
+        });
+
+        function closeErrorModal() {
+            document.getElementById('errorModal').classList.add('hidden');
+        }
+
+        document.getElementById('irisUploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+
+            try {
+                const response = await fetch('/verifyIris', { method: 'POST', body: formData });
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('successModal').classList.remove('hidden');
+                    document.getElementById('verifiedName').textContent = data.name;
+                    document.getElementById('verifiedAadhar').textContent = data.aadhar;
+                    document.getElementById('verifiedEmail').textContent = data.email;
+                } else {
+                    document.getElementById('errorMessage').textContent = data.message;
+                    document.getElementById('errorModal').classList.remove('hidden');
+                }
+            } catch (error) {
+                showError('An unexpected error occurred. Please try again.');
+            }
+        });
+    </script>
+</body>
+</html>

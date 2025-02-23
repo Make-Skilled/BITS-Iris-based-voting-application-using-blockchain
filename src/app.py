@@ -1,13 +1,13 @@
-from flask import Flask, render_template, redirect, request, session, flash, url_for
+from flask import Flask, render_template,jsonify, redirect, request, session, flash, url_for
 from werkzeug.utils import secure_filename
 from web3 import Web3, HTTPProvider
 from dotenv import load_dotenv  # Load environment variables
 import boto3, time, json, os
-from datetime import datetime, timedelta
+import cv2
 import numpy as np
 from skimage.metrics import structural_similarity as ssim
 import smtplib
-import cv2
+from datetime import datetime, timedelta
 
 # Load environment variables from .env file
 load_dotenv()
@@ -118,8 +118,8 @@ def compare_images(image1_path, image2_path):
         print(f"Similarity Index: {similarity_index}")
         print(f"MSE: {mse}")
         
-        # Return True if images are very similar
-        return similarity_index > 0.95 and mse < 1000
+        # Return True if images are very similar (using more lenient thresholds)
+        return similarity_index > 0.75 and mse < 5000
         
     except Exception as e:
         print(f"Error comparing images: {e}")
@@ -247,7 +247,7 @@ def userRegister():
             # Connect to Blockchain and Register the User
             try:
                 contract, web3 = connectWithContract(0)
-                tx_hash = contract.functions.registerVoter(name, aadhar, file_path,email,"irisvoting").transact()
+                tx_hash = contract.functions.registerVoter(name, aadhar, filename,email,"irisvoting").transact()
                 web3.eth.waitForTransactionReceipt(tx_hash)
 
                  # Send confirmation email
@@ -459,7 +459,7 @@ def voteNow(id):
         return render_template("timeout.html")  # Poll has ended
     elif poll_start_datetime <= current_time_ist < poll_end_datetime:
         print("Poll is active")
-        return render_template("votenow.html")  # Poll is active
+        return render_template("irisVerification.html")  # Poll is active
     else:
         print("Polling not started")
         return render_template("timer.html", time=poll_start_str)  # Poll hasn't started yet
@@ -468,49 +468,73 @@ def voteNow(id):
 def verify_iris():
     """Verifies if the uploaded iris image matches an existing registered user."""
     try:
-        # Check if an image is provided
+        # ✅ Check if an image is provided
         if 'iris' not in request.files:
-            return {"success": False, "message": "No file provided"}, 400
+            return jsonify({"success": False, "message": "No file provided"}), 400
 
         iris_file = request.files['iris']
 
         if iris_file.filename == '':
-            return {"success": False, "message": "No file selected"}, 400
+            return jsonify({"success": False, "message": "No file selected"}), 400
 
         if not allowed_file(iris_file.filename):
-            return {"success": False, "message": "Invalid file format. Only PNG, JPG, and JPEG allowed"}, 400
+            return jsonify({"success": False, "message": "Invalid file format. Only PNG, JPG, and JPEG allowed"}), 400
 
-        # Save the uploaded image temporarily
+        # ✅ Save the uploaded image temporarily
         file_extension = iris_file.filename.rsplit('.', 1)[1].lower()
-        timestamp = int(time.time())  
-        filename = f"temp_{timestamp}.{file_extension}"  
+        timestamp = int(time.time())
+        filename = f"temp_{timestamp}.{file_extension}"
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         iris_file.save(file_path)
 
-        # Compare with existing registered iris images
-        image_files = [f for f in os.listdir(app.config['UPLOAD_FOLDER']) if f.lower().endswith(tuple(app.config['ALLOWED_EXTENSIONS']))]
-        
+        print(f"✅ Temp file saved at: {file_path}")
+
+        # ✅ Resize image to match stored format
+        img = cv2.imread(file_path, cv2.IMREAD_GRAYSCALE)
+        height = 800
+        width = int(height * img.shape[1] / img.shape[0])
+        img = cv2.resize(img, (width, height))
+        cv2.imwrite(file_path, img)
+
+        # ✅ Compare with existing registered iris images
+        image_files = [f for f in os.listdir(app.config['UPLOAD_FOLDER'])
+                       if f.lower().endswith(tuple(app.config['ALLOWED_EXTENSIONS']))]
+
+        print(f"✅ Found {len(image_files)} images to compare against")
+
         for existing_image in image_files:
             existing_image_path = os.path.join(app.config['UPLOAD_FOLDER'], existing_image)
-            
+            print(f"🔸 Checking against: {existing_image}")
+
             if compare_images(file_path, existing_image_path):
-                # If a match is found, retrieve Aadhar linked to the image
+                print(f"✅ Match found with: {existing_image}")
+
+                # ✅ If a match is found, retrieve Aadhar linked to the image
                 contract, web3 = connectWithContract(0)
                 all_voters = contract.functions.getAllVoters().call()
 
                 for voter in all_voters:
-                    _, aadhar, stored_image, _, _ = voter
-                    if stored_image == existing_image:
-                        os.remove(file_path)  # Clean up temp file
-                        return {"success": True, "message": "Iris match found", "aadhar": aadhar}, 200
+                    name, aadhar, stored_image, email, _ = voter
+                    voterDetails = contract.functions.getVoter(aadhar).call()
+                    print(voterDetails)
 
-        # If no match found
+                    # 🔹 Fix: Compare only filenames
+                    if os.path.basename(stored_image) == existing_image:
+                        os.remove(file_path)  # Clean up temp file
+                        return jsonify({
+                            "success": True,
+                            "message": "Iris match found",
+                            "aadhar": aadhar,
+                            "name": name,
+                            "email": email
+                        }), 200
+
+        # ✅ If no match found
         os.remove(file_path)  # Clean up temp file
-        return {"success": False, "message": "Iris not recognized"}, 404
+        return jsonify({"success": False, "message": "Iris not recognized"}), 404
 
     except Exception as e:
-        return {"success": False, "message": f"Error: {str(e)}"}, 500
-
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
 
 @app.route("/logout")
 def logout():
