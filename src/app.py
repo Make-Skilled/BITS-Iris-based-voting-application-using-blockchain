@@ -180,7 +180,13 @@ def register():
 
 @app.route("/admin")
 def adminDashboard():
-    return render_template("adminDashboard.html")
+    try:
+        contract,web3=connectWithContract(0)
+        voters=contract.functions.getAllVoters().call()
+        return render_template("adminDashboard.html",voters=voters)
+    except Exception as e:
+        print(e)
+        return redirect(url_for("login"))
 
 @app.route("/addUser")
 def addUser():
@@ -296,7 +302,7 @@ def userLogin():
             flash("Voter not registered!", "error")
             return redirect(url_for("login"))
 
-        fullName, aadharNumber, irisImagePath, email, stored_password = voter
+        id,fullName, aadharNumber, irisImagePath, email, stored_password = voter
 
         # Check Password
         if password == stored_password:
@@ -309,6 +315,7 @@ def userLogin():
             return redirect(url_for("login"))
 
     except Exception as e:
+        print(e)
         flash(f"Login failed", "error")
         return redirect(url_for("login"))
     
@@ -515,7 +522,7 @@ def verify_iris():
                 all_voters = contract.functions.getAllVoters().call()
 
                 for voter in all_voters:
-                    name, aadhar, stored_image, email, _ = voter
+                    id,name, aadhar, stored_image, email, _ = voter
                     voterDetails = contract.functions.getVoter(aadhar).call()
                     print(voterDetails)
 
@@ -557,6 +564,7 @@ def cast_vote():
     try:
         poll_id = session['pollingId']
         id=request.form.get('party_id')
+        print(id)
 
         # Connect to Smart Contract
         contract, web3 = connectWithContract(0)
@@ -574,9 +582,52 @@ def cast_vote():
     except Exception as e:
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
 
+@app.route("/viewResults", methods=["GET"])
+def view_results():
+    try:
+        poll_id = request.args.get("pollId")
+        if poll_id is None:
+            return jsonify({"success": False, "message": "pollId is required"}), 400
+
+        poll_id = int(poll_id)
+        contract, web3 = connectWithContract(0)
+
+        # Fetch poll results
+        party_ids, vote_counts = contract.functions.getPollResults(poll_id).call()
+
+        if not party_ids:
+            return jsonify({"success": False, "message": "Poll not found or no votes recorded"}), 404
+
+        # Format response
+        results = [{"partyId": party_ids[i], "voteCount": vote_counts[i]} for i in range(len(party_ids))]
+
+        return jsonify({"success": True, "pollId": poll_id, "results": results}), 200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+
 @app.route("/timeout")
 def timeout():
     return render_template("timedOut.html")
+
+@app.route("/results")
+def results():
+    contract,web3=connectWithContract(0)
+    allPolls=contract.functions.getAllPolls().call()
+    return render_template("results.html",polls=allPolls)
+
+@app.route("/deleteVoter/<aadhar>")
+def deleteVoter(aadhar):
+    try:
+        session['admin']
+        contract, web3 = connectWithContract(0)
+        tx_hash = contract.functions.deleteVoter(aadhar).transact()
+        web3.eth.wait_for_transaction_receipt(tx_hash)
+        flash("Voter deleted successfully!", "success")
+        return redirect(url_for("adminDashboard"))
+    except Exception as e:
+        flash(f"Error deleting voter: {str(e)}", "error")
+        return redirect(url_for("adminDashboard"))
 
 @app.route("/logout")
 def logout():

@@ -16,13 +16,19 @@
                 <li class="mb-3"><a href="/admin" class="block p-2 rounded bg-gray-800">Dashboard</a></li>
                 <li class="mb-3"><a href="/admin" class="block p-2 rounded hover:bg-gray-700">Users</a></li>
                 <li class="mb-3"><a href="/getAllPolls" class="block p-2 rounded hover:bg-gray-700">Polls</a></li>
+                <li class="mb-3"><a href="/results" class="block p-2 rounded hover:bg-gray-700">Results</a></li>
                 <li class="mb-3"><a href="/logout" class="block p-2 rounded hover:bg-gray-700">Logout</a></li>
             </ul>
         </aside>
 
         <!-- Main Content -->
         <main class="flex-1 p-6">
-            <h1 class="text-2xl font-bold mb-5">User Management</h1>
+            <div class="flex justify-between items-center mb-5">
+                <h1 class="text-2xl font-bold">User Management</h1>
+                <a href="/addUser" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    + Add User
+                </a>
+            </div>
 
             <!-- User Table -->
             <div class="bg-white p-5 shadow-md rounded-lg">
@@ -32,31 +38,28 @@
                             <th class="border p-3">ID</th>
                             <th class="border p-3">Name</th>
                             <th class="border p-3">Email</th>
-                            <th class="border p-3">Status</th>
+                            <th class="border p-3">Aadhar</th>
                             <th class="border p-3">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
+                        {% for voter in voters %}
                         <tr class="text-center">
-                            <td class="border p-3">1</td>
-                            <td class="border p-3">John Doe</td>
-                            <td class="border p-3">johndoe@example.com</td>
-                            <td class="border p-3"><span class="bg-green-500 text-white px-2 py-1 rounded">Active</span></td>
+                            <td class="border p-3">{{ voter[0] }}</td> <!-- ID -->
+                            <td class="border p-3">{{ voter[1] }}</td> <!-- Name -->
+                            <td class="border p-3">{{ voter[4] }}</td> <!-- Email -->
+                            <td class="border p-3">{{ voter[2] }}</td> <!-- Aadhar -->
                             <td class="border p-3">
-                                <button class="bg-blue-500 text-white px-3 py-1 rounded">Edit</button>
-                                <button class="bg-red-500 text-white px-3 py-1 rounded">Delete</button>
+                                <a href="{{ url_for('deleteVoter', aadhar=voter[2]) }}" class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">
+                                    Delete
+                                </a>
                             </td>
                         </tr>
-                        <tr class="text-center">
-                            <td class="border p-3">2</td>
-                            <td class="border p-3">Jane Smith</td>
-                            <td class="border p-3">janesmith@example.com</td>
-                            <td class="border p-3"><span class="bg-yellow-500 text-white px-2 py-1 rounded">Pending</span></td>
-                            <td class="border p-3">
-                                <button class="bg-blue-500 text-white px-3 py-1 rounded">Edit</button>
-                                <button class="bg-red-500 text-white px-3 py-1 rounded">Delete</button>
-                            </td>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center p-4">No users found.</td>
                         </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>

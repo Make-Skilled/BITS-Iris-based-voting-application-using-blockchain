@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>All Polls - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-900 text-white p-5">
+            <h2 class="text-xl font-bold mb-5">Admin Dashboard</h2>
+            <ul>
+                <li class="mb-3"><a href="/admin" class="block p-2 rounded bg-gray-800">Dashboard</a></li>
+                <li class="mb-3"><a href="/admin" class="block p-2 rounded hover:bg-gray-700">Users</a></li>
+                <li class="mb-3"><a href="/getAllPolls" class="block p-2 rounded hover:bg-gray-700">Polls</a></li>
+                <li class="mb-3"><a href="/logout" class="block p-2 rounded hover:bg-gray-700">Logout</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-8 overflow-auto">
+            <div class="max-w-7xl mx-auto">
+                <header class="flex justify-between items-center mb-8">
+                    <h1 class="text-3xl font-bold text-gray-800">All Polls</h1>
+                </header>
+
+                <!-- Polls Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {% for poll in polls %}
+                    <div class="bg-white shadow-lg rounded-lg p-6 hover:shadow-xl transition-all duration-300">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-bold text-gray-900 line-clamp-1">{{ poll[1] }}</h2>
+                        </div>
+                        <div class="space-y-3">
+                            <p class="text-gray-600 flex items-center gap-2">
+                                <i class="far fa-calendar-alt text-blue-500"></i>
+                                <span>{{ poll[2] }}</span>
+                            </p>
+                            <p class="text-gray-600 flex items-center gap-2">
+                                <i class="far fa-clock text-green-500"></i>
+                                <span>{{ poll[3] }}</span>
+                            </p>
+                            <p class="text-gray-600 flex items-center gap-2">
+                                <i class="fas fa-clock text-red-500"></i>
+                                <span>{{ poll[4] }}</span>
+                            </p>
+                        </div>
+                        <div class="mt-6 flex gap-2">
+                            <button onclick="fetchResults('{{poll[0]}}')" 
+                               class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors duration-200 text-center flex items-center justify-center gap-2">
+                                <i class="fas fa-users"></i>
+                                View Results
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- No Polls Message -->
+                {% if not polls %}
+                <div class="text-center py-12">
+                    <div class="text-gray-400 mb-4">
+                        <i class="fas fa-poll fa-3x"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-700 mb-2">No Polls Available</h3>
+                    <p class="text-gray-500">Create your first poll to get started</p>
+                </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Results Modal -->
+    <div id="resultsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-96 shadow-lg relative">
+            <button onclick="closeModal()" class="absolute top-3 right-3 text-gray-600 hover:text-gray-900">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Poll Results</h2>
+            <div id="resultsContent" class="space-y-3">
+                <p class="text-gray-600">Fetching results...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function fetchResults(pollId) {
+            document.getElementById("resultsModal").classList.remove("hidden");
+            document.getElementById("resultsContent").innerHTML = "<p class='text-gray-600'>Fetching results...</p>";
+
+            try {
+                const response = await fetch(`/viewResults?pollId=${pollId}`);
+                const data = await response.json();
+
+                if (data.success && data.results.length > 0) {
+                    let resultHTML = "<ul class='space-y-2'>";
+                    data.results.forEach(result => {
+                        resultHTML += `<li class="p-2 bg-gray-100 rounded">
+                                        <strong>Party ID:</strong> ${result.partyId}, 
+                                        <strong>Votes:</strong> ${result.voteCount}
+                                    </li>`;
+                    });
+                    resultHTML += "</ul>";
+                    document.getElementById("resultsContent").innerHTML = resultHTML;
+                } else {
+                    document.getElementById("resultsContent").innerHTML = "<p class='text-red-500'>No results found for this poll.</p>";
+                }
+
+            } catch (error) {
+                console.error("Error fetching results:", error);
+                document.getElementById("resultsContent").innerHTML = "<p class='text-red-500'>Error loading results. Please try again.</p>";
+            }
+        }
+
+        function closeModal() {
+            document.getElementById("resultsModal").classList.add("hidden");
+        }
+    </script>
+
+</body>
+</html>

@@ -4,6 +4,7 @@ pragma solidity >=0.4.22 <0.9.0;
 contract Voting {
 
     struct Voter {
+        uint id;
         string fullName;
         string aadharNumber;
         string irisImagePath;
@@ -12,10 +13,11 @@ contract Voting {
     }
 
     struct Party {
-        uint id;
+        uint pollId;
         string partyName;
         string partyLeader;
         string symbolPath;
+        uint partyId;
     }
 
     struct Poll {
@@ -26,15 +28,34 @@ contract Voting {
         string endTime;
     }
 
+    uint private voterCounter = 0; // Auto-incrementing voter ID
     mapping(string => Voter) public voters;
     string[] public voterAadhars;
 
-    mapping(uint => Party) private parties; // Store parties by ID
+    mapping(uint => Party) private parties;
     Party[] public allParties;
 
-    uint private pollCounter = 0;  // Auto-incrementing poll ID
+    uint private pollCounter = 0;
     mapping(uint => Poll) public polls;
-    uint[] private pollIds;  // To track all poll IDs
+    uint[] private pollIds;
+
+    // Struct for storing votes for each poll
+    struct Vote {
+        uint pollId;
+        mapping(uint => uint) partyVotes; // Maps partyId to vote count
+        uint[] partyIds; // List of all partyIds in the poll
+        bool initialized; // Flag to track if poll exists
+    }
+
+    // Struct for tracking who has voted in each poll
+    struct PolledIds {
+        uint pollId;
+        mapping(string => bool) hasVoted; // Maps Aadhaar number to voting status
+    }
+
+    // Mappings for votes and voter tracking
+    mapping(uint => Vote) public pollVotes; // Maps pollId to Vote struct
+    mapping(uint => PolledIds) public polledVoters; // Maps pollId to PolledIds struct
 
     function registerVoter(
         string memory _fullName,
@@ -45,7 +66,10 @@ contract Voting {
     ) public {
         require(bytes(voters[_aadharNumber].aadharNumber).length == 0, "Voter already registered with this Aadhar number");
 
+        voterCounter++; // Auto-increment voter ID
+
         voters[_aadharNumber] = Voter({
+            id: voterCounter,
             fullName: _fullName,
             aadharNumber: _aadharNumber,
             irisImagePath: _irisImagePath,
@@ -56,39 +80,18 @@ contract Voting {
         voterAadhars.push(_aadharNumber);
     }
 
-    function getVoter(string memory aadhar) public view returns (string memory, string memory, string memory, string memory, string memory) {
-        require(bytes(voters[aadhar].aadharNumber).length > 0, "Voter not registered");
+    function getPollById(uint _pollId) public view returns (uint, string memory, string memory, string memory, string memory) {
+        require(bytes(polls[_pollId].pollName).length > 0, "Poll does not exist");
 
-        Voter memory voter = voters[aadhar];
-        return (voter.fullName, voter.aadharNumber, voter.irisImagePath, voter.email, voter.password);
-    }
-
-    // New function to get all registered voters
-    function getAllVoters() public view returns (Voter[] memory) {
-        Voter[] memory allVoters = new Voter[](voterAadhars.length);
-        for (uint i = 0; i < voterAadhars.length; i++) {
-            allVoters[i] = voters[voterAadhars[i]];
-        }
-        return allVoters;
-    }
-
-    function addParty(uint _id, string memory _partyName, string memory _partyLeader, string memory _symbolPath) public {
-        parties[_id] = Party(_id, _partyName, _partyLeader, _symbolPath);
-        allParties.push(Party(_id, _partyName, _partyLeader, _symbolPath));
-    }
-
-    function getParty(uint _id) public view returns (uint, string memory, string memory, string memory) {
-        require(bytes(parties[_id].partyName).length > 0, "Party does not exist");
-
-        Party memory party = parties[_id];
-        return (party.id, party.partyName, party.partyLeader, party.symbolPath);
+        Poll memory poll = polls[_pollId];
+        return (poll.pollId, poll.pollName, poll.pollDate, poll.startTime, poll.endTime);
     }
 
     function getPartiesByPartyId(uint partyId) public view returns (Party[] memory) {
         uint count = 0;
 
         for (uint i = 0; i < allParties.length; i++) {
-            if (allParties[i].id == partyId) {
+            if (allParties[i].pollId == partyId) {
                 count++;
             }
         }
@@ -97,7 +100,7 @@ contract Voting {
         uint index = 0;
 
         for (uint i = 0; i < allParties.length; i++) {
-            if (allParties[i].id == partyId) {
+            if (allParties[i].pollId == partyId) {
                 result[index] = allParties[i];
                 index++;
             }
@@ -106,8 +109,36 @@ contract Voting {
         return result;
     }
 
+    function getVoter(string memory aadhar) public view returns (uint, string memory, string memory, string memory, string memory, string memory) {
+        require(bytes(voters[aadhar].aadharNumber).length > 0, "Voter not registered");
+
+        Voter memory voter = voters[aadhar];
+        return (voter.id, voter.fullName, voter.aadharNumber, voter.irisImagePath, voter.email, voter.password);
+    }
+
+    function getAllVoters() public view returns (Voter[] memory) {
+        Voter[] memory allVoters = new Voter[](voterAadhars.length);
+        for (uint i = 0; i < voterAadhars.length; i++) {
+            allVoters[i] = voters[voterAadhars[i]];
+        }
+        return allVoters;
+    }
+    uint partyCounter;
+    function addParty(uint _id, string memory _partyName, string memory _partyLeader, string memory _symbolPath) public {
+        partyCounter++;
+        parties[_id] = Party(_id, _partyName, _partyLeader, _symbolPath,partyCounter);
+        allParties.push(Party(_id, _partyName, _partyLeader, _symbolPath,partyCounter));
+    }
+
+    function getParty(uint _id) public view returns (uint, string memory, string memory, string memory) {
+        require(bytes(parties[_id].partyName).length > 0, "Party does not exist");
+
+        Party memory party = parties[_id];
+        return (party.pollId, party.partyName, party.partyLeader, party.symbolPath);
+    }
+
     function addPoll(string memory _pollName, string memory _pollDate, string memory _startTime, string memory _endTime) public {
-        pollCounter++;  
+        pollCounter++;
 
         polls[pollCounter] = Poll(pollCounter, _pollName, _pollDate, _startTime, _endTime);
         pollIds.push(pollCounter);
@@ -121,48 +152,29 @@ contract Voting {
         return allPolls;
     }
 
-    function getPollById(uint _pollId) public view returns (uint, string memory, string memory, string memory, string memory) {
-        require(bytes(polls[_pollId].pollName).length > 0, "Poll does not exist");
-
-        Poll memory poll = polls[_pollId];
-        return (poll.pollId, poll.pollName, poll.pollDate, poll.startTime, poll.endTime);
-    }
-
-    struct Vote {
-        uint pollId;
-        mapping(uint => uint) partyVotes; // Maps partyId to vote count
-        uint[] partyIds; // List of all partyIds in the poll
-        bool initialized; // Flag to track if poll exists
-    }
-
-    struct PolledIds {
-        uint pollId;
-        mapping(string => bool) hasVoted; // Maps Aadhaar number to voting status
-    }
-
-    mapping(uint => Vote) public pollVotes; // Maps pollId to Vote struct
-    mapping(uint => PolledIds) public polledVoters; // Maps pollId to PolledIds struct
-
     function vote(uint _pollId, uint _partyId, string memory _aadharNumber) public {
+        require(bytes(voters[_aadharNumber].aadharNumber).length > 0, "Voter not registered");
         require(!polledVoters[_pollId].hasVoted[_aadharNumber], "Already voted!");
+        require(bytes(polls[_pollId].pollName).length > 0, "Poll does not exist");
 
         // Initialize poll if first vote
         if (!pollVotes[_pollId].initialized) {
             pollVotes[_pollId].initialized = true;
+            pollVotes[_pollId].pollId = _pollId;
         }
 
         // Record vote
         if (pollVotes[_pollId].partyVotes[_partyId] == 0) {
-            pollVotes[_pollId].partyIds.push(_partyId); // Track party ID
+            pollVotes[_pollId].partyIds.push(_partyId);
         }
         pollVotes[_pollId].partyVotes[_partyId]++;
 
         // Mark Aadhaar as voted
         polledVoters[_pollId].hasVoted[_aadharNumber] = true;
-
     }
 
     function getVotes(uint _pollId, uint _partyId) public view returns (uint) {
+        require(pollVotes[_pollId].initialized, "Poll has no votes");
         return pollVotes[_pollId].partyVotes[_partyId];
     }
 
@@ -170,10 +182,6 @@ contract Voting {
         return polledVoters[_pollId].hasVoted[_aadharNumber];
     }
 
-    /// @notice Retrieves the poll results with party vote counts
-    /// @param _pollId The poll ID to fetch results for
-    /// @return partyIds Array of party IDs
-    /// @return voteCounts Array of corresponding vote counts
     function getPollResults(uint _pollId) public view returns (uint[] memory partyIds, uint[] memory voteCounts) {
         require(pollVotes[_pollId].initialized, "Poll does not exist!");
 
@@ -188,6 +196,24 @@ contract Voting {
         }
 
         return (partyIds, voteCounts);
+    }
+
+    function deleteVoter(string memory _aadharNumber) public {
+        require(bytes(voters[_aadharNumber].aadharNumber).length > 0, "Voter not found");
+        
+        // Remove from mapping
+        delete voters[_aadharNumber];
+        
+        // Remove from array
+        for (uint i = 0; i < voterAadhars.length; i++) {
+            if (keccak256(bytes(voterAadhars[i])) == keccak256(bytes(_aadharNumber))) {
+                // Move the last element to the position of the element to delete
+                voterAadhars[i] = voterAadhars[voterAadhars.length - 1];
+                // Remove the last element
+                voterAadhars.pop();
+                break;
+            }
+        }
     }
 
 }
