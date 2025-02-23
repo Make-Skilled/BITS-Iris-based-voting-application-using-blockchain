@@ -128,4 +128,66 @@ contract Voting {
         return (poll.pollId, poll.pollName, poll.pollDate, poll.startTime, poll.endTime);
     }
 
+    struct Vote {
+        uint pollId;
+        mapping(uint => uint) partyVotes; // Maps partyId to vote count
+        uint[] partyIds; // List of all partyIds in the poll
+        bool initialized; // Flag to track if poll exists
+    }
+
+    struct PolledIds {
+        uint pollId;
+        mapping(string => bool) hasVoted; // Maps Aadhaar number to voting status
+    }
+
+    mapping(uint => Vote) public pollVotes; // Maps pollId to Vote struct
+    mapping(uint => PolledIds) public polledVoters; // Maps pollId to PolledIds struct
+
+    function vote(uint _pollId, uint _partyId, string memory _aadharNumber) public {
+        require(!polledVoters[_pollId].hasVoted[_aadharNumber], "Already voted!");
+
+        // Initialize poll if first vote
+        if (!pollVotes[_pollId].initialized) {
+            pollVotes[_pollId].initialized = true;
+        }
+
+        // Record vote
+        if (pollVotes[_pollId].partyVotes[_partyId] == 0) {
+            pollVotes[_pollId].partyIds.push(_partyId); // Track party ID
+        }
+        pollVotes[_pollId].partyVotes[_partyId]++;
+
+        // Mark Aadhaar as voted
+        polledVoters[_pollId].hasVoted[_aadharNumber] = true;
+
+    }
+
+    function getVotes(uint _pollId, uint _partyId) public view returns (uint) {
+        return pollVotes[_pollId].partyVotes[_partyId];
+    }
+
+    function hasVoted(uint _pollId, string memory _aadharNumber) public view returns (bool) {
+        return polledVoters[_pollId].hasVoted[_aadharNumber];
+    }
+
+    /// @notice Retrieves the poll results with party vote counts
+    /// @param _pollId The poll ID to fetch results for
+    /// @return partyIds Array of party IDs
+    /// @return voteCounts Array of corresponding vote counts
+    function getPollResults(uint _pollId) public view returns (uint[] memory partyIds, uint[] memory voteCounts) {
+        require(pollVotes[_pollId].initialized, "Poll does not exist!");
+
+        uint totalParties = pollVotes[_pollId].partyIds.length;
+        partyIds = new uint[](totalParties);
+        voteCounts = new uint[](totalParties);
+
+        for (uint i = 0; i < totalParties; i++) {
+            uint partyId = pollVotes[_pollId].partyIds[i];
+            partyIds[i] = partyId;
+            voteCounts[i] = pollVotes[_pollId].partyVotes[partyId];
+        }
+
+        return (partyIds, voteCounts);
+    }
+
 }

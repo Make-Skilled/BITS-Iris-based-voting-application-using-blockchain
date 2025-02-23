@@ -427,6 +427,7 @@ def voteNow(id):
     contract, web3 = connectWithContract(0)
     poll = contract.functions.getPollById(int(id)).call()
     print("Raw Poll Data:", poll)
+    session["pollingId"]=id
 
     # Extract date and time from the poll response
     poll_date = poll[2]  # Format: 'YYYY-MM-DD'
@@ -536,10 +537,51 @@ def verify_iris():
     except Exception as e:
         return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
 
+@app.route("/vote")
+def vote():
+    try:
+        session['user']
+        contract,web3=connectWithContract(0)
+        parties=contract.functions.getPartiesByPartyId(int(session['pollingId'])).call()
+        print(parties)
+        return render_template("votenow.html",parties=parties)
+    except Exception as e:
+        flash(f"Please login", "error")
+        return redirect(url_for("login"))
+
+@app.route("/castVote", methods=["POST"])
+def cast_vote():
+    """
+    Casts a vote for a given poll and party.
+    """
+    try:
+        poll_id = session['pollingId']
+        id=request.form.get('party_id')
+
+        # Connect to Smart Contract
+        contract, web3 = connectWithContract(0)
+        # Check if voter has already voted
+        has_voted = contract.functions.hasVoted(int(poll_id), session['user']['aadhar']).call()
+        if has_voted:
+            return jsonify({"success": False, "message": "You have already voted in this poll"}), 403
+
+        # Cast the vote
+        tx_hash = contract.functions.vote(int(poll_id), int(id), session['user']['aadhar']).transact()
+        web3.eth.wait_for_transaction_receipt(tx_hash)
+
+        return render_template("success.html"),200
+
+    except Exception as e:
+        return jsonify({"success": False, "message": f"Error: {str(e)}"}), 500
+
+@app.route("/timeout")
+def timeout():
+    return render_template("timedOut.html")
+
 @app.route("/logout")
 def logout():
     session.clear()
-    return render_template("index.html")
+    return redirect(url_for("login"))
 
 if __name__ == "__main__":
     app.run(debug=True)

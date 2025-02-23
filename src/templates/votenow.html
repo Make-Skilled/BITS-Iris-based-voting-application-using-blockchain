@@ -3,60 +3,126 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iris Verification</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 50px;
-            background-color: #f4f4f4;
-            color: #333;
-        }
-        .container {
-            max-width: 500px;
-            margin: auto;
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            font-size: 24px;
-            color: #007bff;
-        }
-        p {
-            font-size: 18px;
-        }
-        .file-input {
-            margin: 20px 0;
-        }
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            font-size: 16px;
-            color: white;
-            background: #28a745;
-            text-decoration: none;
-            border-radius: 5px;
-            border: none;
-            cursor: pointer;
-            margin-top: 10px;
-        }
-        .btn:hover {
-            background: #218838;
-        }
-    </style>
+    <title>All Parties</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
 </head>
-<body>
-    <div class="container">
-        <h1>Iris Verification</h1>
-        <p>Please upload an image of your iris for verification.</p>
-
-        <form action="/verifyIris" method="POST" enctype="multipart/form-data">
-            <input type="file" name="iris" accept="image/*" class="file-input" required>
-            <br>
-            <button type="submit" class="btn">Upload & Verify</button>
-        </form>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Timer Banner -->
+    <div class="bg-red-100 p-4 text-center sticky top-0 z-50" id="timer-banner">
+        <div class="max-w-4xl mx-auto flex items-center justify-center space-x-2">
+            <i class="fas fa-clock text-red-600"></i>
+            <p class="text-red-800">
+                Time remaining to cast your vote: <span id="timer" class="font-bold">0:30</span>
+            </p>
+        </div>
     </div>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg sticky top-12 z-40">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-blue-600 hover:text-blue-700 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-vote-yea mr-2"></i>
+                        SecureVote
+                    </span>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#features" class="text-gray-600 hover:text-blue-600 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-star mr-2"></i>Features
+                    </a>
+                    <a href="#how-it-works" class="text-gray-600 hover:text-blue-600 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>How It Works
+                    </a>
+                    <a href="/viewPolls" class="text-gray-600 hover:text-blue-600 transition-colors duration-300 flex items-center">
+                        <i class="fas fa-poll mr-2"></i>View Polls
+                    </a>
+                    <a href="/logout">
+                        <button class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-all duration-300 transform hover:scale-105 flex items-center">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </button>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4 py-8">
+        <div class="max-w-6xl mx-auto">
+            <header class="text-center mb-12">
+                <h1 class="text-4xl font-bold text-gray-800 mb-4">Political Parties</h1>
+                <p class="text-gray-600 max-w-2xl mx-auto">Review the registered parties and their leaders before casting your vote.</p>
+            </header>
+
+            {% if parties %}
+            <!-- Parties Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                {% for party in parties %}
+                <div class="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden">
+                    <div class="relative">
+                        <img src="{{ url_for('static', filename='uploads/' + party[3]) }}" 
+                             alt="{{ party[1] }}" 
+                             class="w-full h-48 object-cover">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
+                    </div>
+                    <div class="p-6">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-3">{{ party[1] }}</h2>
+                        <div class="flex items-center space-x-2 text-gray-600 mb-4">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                            <p class="font-medium">{{ party[2] }}</p>
+                        </div>
+                        <form action="/castVote" method="POST" class="mt-4">
+                            <input type="hidden" name="party_id" value="{{ party[0] }}">
+                            <button type="submit" 
+                                    class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 flex items-center justify-center">
+                                <i class="fas fa-vote-yea mr-2"></i>
+                                Vote Now
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <!-- No Parties Message -->
+            <div class="bg-white rounded-xl shadow-md p-8 text-center max-w-2xl mx-auto">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">No Parties Available</h2>
+                <p class="text-gray-600">No political parties have been registered for this poll yet. Please check back later.</p>
+            </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <script>
+        // Timer functionality
+        function startTimer(duration, display) {
+            let timer = duration;
+            const interval = setInterval(function () {
+                const minutes = parseInt(timer / 60, 10);
+                const seconds = parseInt(timer % 60, 10);
+
+                display.textContent = minutes + ":" + (seconds < 10 ? "0" : "") + seconds;
+
+                if (--timer < 0) {
+                    clearInterval(interval);
+                    window.location.href = '/timeout'; // Redirect to timeout page
+                }
+            }, 1000);
+        }
+
+        window.onload = function () {
+            const fiveMinutes = 30 * 1;
+            const display = document.querySelector('#timer');
+            startTimer(fiveMinutes, display);
+        };
+    </script>
 </body>
 </html>
