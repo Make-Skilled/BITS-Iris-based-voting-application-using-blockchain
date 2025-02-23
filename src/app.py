@@ -1,3 +1,4 @@
+import email
 from flask import Flask, render_template,jsonify, redirect, request, session, flash, url_for
 from werkzeug.utils import secure_filename
 from web3 import Web3, HTTPProvider
@@ -8,6 +9,10 @@ import numpy as np
 from skimage.metrics import structural_similarity as ssim
 import smtplib
 from datetime import datetime, timedelta
+import random
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
 
 # Load environment variables from .env file
 load_dotenv()
@@ -20,6 +25,55 @@ SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 EMAIL_ADDRESS = "kr4785543@gmail.com"
 EMAIL_PASSWORD = "qhuzwfrdagfyqemk"
+
+otp_storage = {}
+
+def send_otp(email):
+    """
+    Sends a one-time password (OTP) to the provided email.
+    Returns True if email is sent successfully, else False.
+    """
+    try:
+        # Generate a 6-digit OTP
+        otp = random.randint(100000, 999999)
+        otp_storage[email] = otp  # Store OTP (Use a database in real-world applications)
+
+        # Email subject and body
+        subject = "SecureVote - OTP for Password Reset"
+        body = f"""
+        Dear User,
+
+        Your OTP for password reset is: {otp}
+
+        Please use this OTP to proceed with resetting your password.
+
+        Best Regards,
+        SecureVote Team
+        """
+
+        # Create email message
+        msg = MIMEMultipart()
+        msg['From'] = EMAIL_ADDRESS
+        msg['To'] = email
+        msg['Subject'] = subject
+        msg.attach(MIMEText(body, 'plain'))
+
+        # Send email using SMTP
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()  # Secure the connection
+            server.login(EMAIL_ADDRESS, EMAIL_PASSWORD)
+            server.send_message(msg)
+
+        print(f"OTP sent successfully to {email}")
+        return True
+
+    except smtplib.SMTPAuthenticationError:
+        print("Failed to authenticate with email server. Check your credentials.")
+        return False
+    except Exception as e:
+        print(f"Error sending OTP: {str(e)}")
+        return False
+
 
 def send_confirmation_email(email, name):
     """ Sends an email confirming successful registration using SMTP """
@@ -36,6 +90,7 @@ def send_confirmation_email(email, name):
         body = f"""Dear {name},
 
 Your account has been successfully created on the Secure Voting Platform.
+Update your password ASAP.To confirn account creation you can use the password "irisvoting" temporarily.
 
 Best Regards,
 Secure Voting Team"""
@@ -660,6 +715,62 @@ def deleteVoter(aadhar):
     except Exception as e:
         flash(f"Error deleting voter: {str(e)}", "error")
         return redirect(url_for("adminDashboard"))
+
+@app.route("/change-password", methods=["GET", "POST"])
+def changePassword():
+    return render_template("changePassword.html")
+
+@app.route("/sendOtp",methods=['post'])
+def sendOtp():    
+    email=request.form.get("email")
+    session['email']=email
+    send_otp(email)
+    return render_template("verify.html")
+
+@app.route('/verifyOtp', methods=['POST'])
+def verify_otp():
+    """
+    Verifies the OTP entered by the user.
+    Expects JSON data: { "email": "user@example.com", "otp": "123456" }
+    """
+    try:
+        email=session['email']
+        otp_entered = int(request.form.get("otp"))
+
+        # Check if OTP exists for the given email
+        print(otp_storage)
+        if email not in otp_storage:
+            return jsonify({"success": False, "message": "OTP not found or expired."}), 400
+
+        # Retrieve stored OTP
+        stored_otp = otp_storage[email]
+
+
+        # Validate OTP
+        if stored_otp == otp_entered:
+            del otp_storage[email]  # Remove OTP after successful verification
+            return render_template("update.html")
+        else:
+            return render_template("verify.html",message="Invalid OTP. Please try again.")
+    except ValueError:
+        return render_template("verify.html",message="Invalid OTP format.")
+    except Exception as e:
+        return render_template("verify.html",message=f"Error: {str(e)}")
+
+@app.route("/updatePassword", methods=["POST"])
+def updatePassword():
+    try:
+        email = session['email']
+        password = request.form.get('password')
+        cpassword = request.form.get('cpassword')
+        if password != cpassword:
+            return render_template("update.html",message="Passwords do not match")
+        contract, web3 = connectWithContract(0)
+        tx_hash = contract.functions.updateVoterByEmail(email, password).transact()
+        web3.eth.wait_for_transaction_receipt(tx_hash)
+        return render_template("login.html")
+    except Exception as e:
+        return render_template("update.html",message=f"Error: {str(e)}")
 
 @app.route("/logout")
 def logout():

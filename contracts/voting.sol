@@ -80,6 +80,20 @@ contract Voting {
         voterAadhars.push(_aadharNumber);
     }
 
+    function updateVoterByEmail(string memory _email, string memory _newPassword) public {
+    bool found = false;
+    for (uint i = 0; i < voterAadhars.length; i++) {
+        string memory aadhar = voterAadhars[i];
+        if (keccak256(bytes(voters[aadhar].email)) == keccak256(bytes(_email))) {
+            voters[aadhar].password = _newPassword;
+            found = true;
+            break;
+        }
+    }
+    require(found, "Voter with this email not found");
+}
+
+
     function getPollById(uint _pollId) public view returns (uint, string memory, string memory, string memory, string memory) {
         require(bytes(polls[_pollId].pollName).length > 0, "Poll does not exist");
 
